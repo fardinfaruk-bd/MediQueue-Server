@@ -1,7 +1,7 @@
 const express = require("express");
 const dotenv = require("dotenv");
 dotenv.config();
-const cors = require('cors');
+const cors = require("cors");
 
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const uri = process.env.MONGODB_URI;
@@ -9,9 +9,8 @@ const uri = process.env.MONGODB_URI;
 const app = express();
 const PORT = process.env.PORT;
 
-app.use(cors())
-app.use(express.json())
-
+app.use(cors());
+app.use(express.json());
 
 const client = new MongoClient(uri, {
   serverApi: {
@@ -30,17 +29,20 @@ async function run() {
     const tutorCollection = db.collection("tutors");
 
     app.get("/tutors", async (req, res) => {
-        const result = await tutorCollection.find().toArray();
-        res.send(result);
-    })
+      const result = await tutorCollection.find().toArray();
+      res.send(result);
+    });
+    app.get("/available-tutors", async (req, res) => {
+      const result = await tutorCollection.find().limit(6).toArray();
+      res.send(result);
+    });
 
-    app.post("/tutors", async (req, res) =>{
-        const newTutor = req.body;
-        console.log(newTutor, "newTutor is");
-        const result = await tutorCollection.insertOne(newTutor);
-        res.send(result);
-    })
-    
+    app.post("/tutors", async (req, res) => {
+      const newTutor = req.body;
+      console.log(newTutor, "newTutor is");
+      const result = await tutorCollection.insertOne(newTutor);
+      res.send(result);
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
