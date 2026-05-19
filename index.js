@@ -45,12 +45,13 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/tutors/:id", async(req, res) => {
+
+    app.get("/tutors/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await tutorCollection.findOne(query);
       res.send(result);
-    })
+    });
     app.get("/booked-sessions", async (req, res) => {
       const result = await BookedSessionsCollection.find().toArray();
       res.send(result);
@@ -59,6 +60,24 @@ async function run() {
       const newSession = req.body;
       console.log(newSession, "newSession is");
       const result = await BookedSessionsCollection.insertOne(newSession);
+      res.send(result);
+    });
+
+    app.patch("/booked-sessions/:id", async (req, res) => {
+      const id = req.params.id;
+
+      const filter = {
+        _id: new ObjectId(id),
+      };
+
+      const updateDoc = {
+        $set: {
+          status: req.body.status,
+        },
+      };
+
+      const result = await BookedSessionsCollection.updateOne(filter, updateDoc);
+
       res.send(result);
     });
 
