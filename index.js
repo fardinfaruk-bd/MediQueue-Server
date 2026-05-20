@@ -30,8 +30,42 @@ async function run() {
     const BookedSessionsCollection = db.collection("booked-sessions");
 
     app.get("/tutors", async (req, res) => {
-      const result = await tutorCollection.find().toArray();
-      res.send(result);
+      try {
+        const { tutorName, sessionStartDate, sessionEndDate } = req.query;
+
+        let query = {};
+
+        // Search by tutor name
+        if (tutorName) {
+          query.tutorName = {
+            $regex: tutorName,
+            $options: "i",
+          };
+        }
+
+        // Filter by sessionStartDate range
+        if (sessionStartDate || sessionEndDate) {
+          query.sessionStartDate = {};
+
+          if (sessionStartDate) {
+            query.sessionStartDate.$gte = sessionStartDate;
+          }
+
+          if (sessionEndDate) {
+            query.sessionStartDate.$lte = sessionEndDate;
+          }
+        }
+
+        const result = await tutorCollection.find(query).toArray();
+
+        res.send(result);
+      } catch (error) {
+        console.log(error);
+
+        res.status(500).send({
+          message: "Something went wrong",
+        });
+      }
     });
     app.get("/available-tutors", async (req, res) => {
       const result = await tutorCollection.find().limit(6).toArray();
@@ -40,11 +74,12 @@ async function run() {
 
     app.post("/tutors", async (req, res) => {
       const newTutor = req.body;
+
       console.log(newTutor, "newTutor is");
       const result = await tutorCollection.insertOne(newTutor);
       res.send(result);
     });
-    
+
     app.get("/my-tutors", async (req, res) => {
       const email = req.query.email?.trim();
 
@@ -67,12 +102,6 @@ async function run() {
       const result = await BookedSessionsCollection.find().toArray();
       res.send(result);
     });
-    app.post("/booked-sessions", async (req, res) => {
-      const newSession = req.body;
-      console.log(newSession, "newSession is");
-      const result = await BookedSessionsCollection.insertOne(newSession);
-      res.send(result);
-    });
 
     app.patch("/booked-sessions/:id", async (req, res) => {
       const id = req.params.id;
@@ -86,13 +115,74 @@ async function run() {
           status: req.body.status,
         },
       };
-
       const result = await BookedSessionsCollection.updateOne(
         filter,
         updateDoc,
       );
 
       res.send(result);
+    });
+
+    app.post("/booked-sessions", async (req, res) => {
+      try {
+        const newSession = req.body;
+        const tutor = await tutorCollection.findOne({
+          _id: new ObjectId(newSession.tutorId),
+        });
+
+        if (!tutor) {
+          return res.status(404).send({
+            success: false,
+            message: "Tutor not found",
+          });
+        }
+        const currentSlot = Number(tutor.totalSlot);
+        console.log(currentSlot);
+
+        if (currentSlot <= 0) {
+          return res.status(400).send({
+            success: false,
+            message: "No available slots left.",
+          });
+        }
+
+        const bookedResult =
+          await BookedSessionsCollection.insertOne(newSession);
+
+        const updateResult = await tutorCollection.updateOne(
+          {
+            _id: new ObjectId(newSession.tutorId),
+          },
+          {
+            $inc: {
+              totalSlot: -1,
+            },
+          },
+        );
+
+        console.log("UPDATE RESULT:", updateResult);
+
+        const updatedTutor = await tutorCollection.findOne({
+          _id: new ObjectId(newSession.tutorId),
+        });
+
+        return res.send({
+          success: true,
+          message:
+            updatedTutor.totalSlot === 0
+              ? "This session is fully booked. You can’t join at the moment."
+              : "Booking successful",
+          bookedResult,
+          updatedSlot: updatedTutor.totalSlot,
+        });
+      } catch (error) {
+        console.log(error);
+
+        return res.status(500).send({
+          success: false,
+          message: error.message,
+        });
+      }
     });
 
     // Send a ping to confirm a successful connection
