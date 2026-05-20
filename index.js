@@ -55,7 +55,7 @@ async function run() {
     const tutorCollection = db.collection("tutors");
     const BookedSessionsCollection = db.collection("booked-sessions");
 
-    app.get("/tutors", verifyToken, async (req, res) => {
+    app.get("/tutors", async (req, res) => {
       try {
         const { tutorName, sessionStartDate, sessionEndDate } = req.query;
 
@@ -90,7 +90,7 @@ async function run() {
       }
     });
 
-    app.get("/available-tutors", verifyToken, async (req, res) => {
+    app.get("/available-tutors", async (req, res) => {
       const result = await tutorCollection.find().limit(6).toArray();
       res.send(result);
     });
