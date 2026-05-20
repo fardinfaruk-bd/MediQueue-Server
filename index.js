@@ -44,7 +44,18 @@ async function run() {
       const result = await tutorCollection.insertOne(newTutor);
       res.send(result);
     });
+    
+    app.get("/my-tutors", async (req, res) => {
+      const email = req.query.email?.trim();
 
+      console.log("email:", email);
+
+      const result = await tutorCollection.find({ userEmail: email }).toArray();
+
+      console.log("result:", result);
+
+      res.send(result);
+    });
 
     app.get("/tutors/:id", async (req, res) => {
       const id = req.params.id;
@@ -76,7 +87,10 @@ async function run() {
         },
       };
 
-      const result = await BookedSessionsCollection.updateOne(filter, updateDoc);
+      const result = await BookedSessionsCollection.updateOne(
+        filter,
+        updateDoc,
+      );
 
       res.send(result);
     });
