@@ -40,6 +40,7 @@ const verifyToken = async (req, res, next) => {
 
     next();
   } catch (error) {
+    console.log(error);
     return res.status(403).send({
       message: "Forbidden access",
     });
@@ -89,6 +90,7 @@ async function run() {
         });
       }
     });
+
     app.patch("/tutors/:id",verifyToken, async (req, res) => {
         const {id} = req.params;
         const updatedTutors = req.body;
@@ -99,6 +101,13 @@ async function run() {
         };
         const result = await tutorCollection.updateOne(query, updateDoc);
         res.send(result);
+    });
+
+    app.delete("/tutors/:id",verifyToken, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await tutorCollection.deleteOne(query);
+      res.send(result);
     });
 
     app.get("/available-tutors", async (req, res) => {
@@ -112,7 +121,7 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/my-tutors", async (req, res) => {
+    app.get("/my-tutors",verifyToken, async (req, res) => {
       const email = req.query.email?.trim();
       const result = await tutorCollection.find({ userEmail: email }).toArray();
 
@@ -139,7 +148,6 @@ async function run() {
           _id: new ObjectId(id),
         };
 
-        
         const bookedSession = await BookedSessionsCollection.findOne(filter);
 
         if (!bookedSession) {
@@ -155,10 +163,7 @@ async function run() {
           },
         };
 
-        const result = await BookedSessionsCollection.updateOne(
-          filter,
-          updateDoc,
-        );
+        const result = await BookedSessionsCollection.updateOne(filter, updateDoc,);
 
         // Increase tutor totalSlot by 1
         await tutorCollection.updateOne(
@@ -183,7 +188,7 @@ async function run() {
       }
     });
 
-    app.post("/booked-sessions", async (req, res) => {
+    app.post("/booked-sessions",verifyToken, async (req, res) => {
       try {
         const newSession = req.body;
         const tutor = await tutorCollection.findOne({
@@ -205,8 +210,7 @@ async function run() {
           });
         }
 
-        const bookedResult =
-          await BookedSessionsCollection.insertOne(newSession);
+        const bookedResult =await BookedSessionsCollection.insertOne(newSession);
 
         const updateResult = await tutorCollection.updateOne(
           {
