@@ -89,6 +89,17 @@ async function run() {
         });
       }
     });
+    app.patch("/tutors/:id",verifyToken, async (req, res) => {
+        const {id} = req.params;
+        const updatedTutors = req.body;
+
+        const query = { _id: new ObjectId(id) };
+        const updateDoc = {
+            $set: updatedTutors,
+        };
+        const result = await tutorCollection.updateOne(query, updateDoc);
+        res.send(result);
+    });
 
     app.get("/available-tutors", async (req, res) => {
       const result = await tutorCollection.find().limit(6).toArray();
@@ -128,7 +139,7 @@ async function run() {
           _id: new ObjectId(id),
         };
 
-        // First get booked session
+        
         const bookedSession = await BookedSessionsCollection.findOne(filter);
 
         if (!bookedSession) {
@@ -137,7 +148,7 @@ async function run() {
           });
         }
 
-        // Update status
+        
         const updateDoc = {
           $set: {
             status: req.body.status,
