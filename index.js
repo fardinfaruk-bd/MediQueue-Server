@@ -116,9 +116,7 @@ async function run() {
     });
     app.get("/booked-sessions", verifyToken, async (req, res) => {
       const email = req.query.email?.trim();
-      const result = await BookedSessionsCollection.find({
-        userEmail: email,
-      }).toArray();
+      const result = await BookedSessionsCollection.find({ userEmail: email,}).toArray();
       res.send(result);
     });
 
