@@ -20,7 +20,9 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   },
 });
-const JWKS = createRemoteJWKSet(new URL(`${process.env.CLIENT_URL}/api/auth/jwks`));
+const JWKS = createRemoteJWKSet(
+  new URL(`${process.env.CLIENT_URL}/api/auth/jwks`),
+);
 
 const verifyToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -91,19 +93,19 @@ async function run() {
       }
     });
 
-    app.patch("/tutors/:id",verifyToken, async (req, res) => {
-        const {id} = req.params;
-        const updatedTutors = req.body;
+    app.patch("/tutors/:id", verifyToken, async (req, res) => {
+      const { id } = req.params;
+      const updatedTutors = req.body;
 
-        const query = { _id: new ObjectId(id) };
-        const updateDoc = {
-            $set: updatedTutors,
-        };
-        const result = await tutorCollection.updateOne(query, updateDoc);
-        res.send(result);
+      const query = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: updatedTutors,
+      };
+      const result = await tutorCollection.updateOne(query, updateDoc);
+      res.send(result);
     });
 
-    app.delete("/tutors/:id",verifyToken, async (req, res) => {
+    app.delete("/tutors/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await tutorCollection.deleteOne(query);
@@ -121,7 +123,7 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/my-tutors",verifyToken, async (req, res) => {
+    app.get("/my-tutors", verifyToken, async (req, res) => {
       const email = req.query.email?.trim();
       const result = await tutorCollection.find({ userEmail: email }).toArray();
 
@@ -136,7 +138,11 @@ async function run() {
     });
     app.get("/booked-sessions", verifyToken, async (req, res) => {
       const email = req.query.email?.trim();
-      const result = await BookedSessionsCollection.find({ userEmail: email,}).toArray();
+
+      const result = await BookedSessionsCollection.find({
+        StudentEmail: email,
+      }).toArray();
+
       res.send(result);
     });
 
@@ -156,16 +162,17 @@ async function run() {
           });
         }
 
-        
         const updateDoc = {
           $set: {
             status: req.body.status,
           },
         };
 
-        const result = await BookedSessionsCollection.updateOne(filter, updateDoc,);
+        const result = await BookedSessionsCollection.updateOne(
+          filter,
+          updateDoc,
+        );
 
-        // Increase tutor totalSlot by 1
         await tutorCollection.updateOne(
           {
             _id: new ObjectId(bookedSession.tutorId),
@@ -188,7 +195,7 @@ async function run() {
       }
     });
 
-    app.post("/booked-sessions",verifyToken, async (req, res) => {
+    app.post("/booked-sessions", verifyToken, async (req, res) => {
       try {
         const newSession = req.body;
         const tutor = await tutorCollection.findOne({
@@ -210,7 +217,8 @@ async function run() {
           });
         }
 
-        const bookedResult =await BookedSessionsCollection.insertOne(newSession);
+        const bookedResult =
+          await BookedSessionsCollection.insertOne(newSession);
 
         const updateResult = await tutorCollection.updateOne(
           {
